@@ -1,2 +1,3 @@
 # nnfR
-neural networks from R
+neural networks from R  
+`devtools::install_github("hans-elliott99/nnfr")`

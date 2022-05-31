@@ -1,0 +1,13 @@
+Package: nnfR
+Title: Simple Deep Learning from R
+Version: 0.0.0.9000
+Authors@R: 
+    person("Hans", "Elliott", , "hanselliott61@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: This package was created as a learning tool to better understand 
+    neural networks. It is built entirely using core-R (or "base" R).  
+License: use_mit_license()
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Imports:

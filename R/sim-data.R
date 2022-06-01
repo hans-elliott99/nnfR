@@ -1,6 +1,14 @@
 ## Creating Spiral Data for Classification##
 #Source: https://cs231n.github.io/neural-networks-case-study/
 
+
+#' Simulate Spiral Data
+#'
+#' Simulate spiral data for multi-class classification tasks.
+#' Source: https://cs231n.github.io/neural-networks-case-study/
+#'
+#' @param N the number of data points per class
+#' @param K the number of classes
 #' @export
 sim_spiral_data = function(
   N = 100, # number of points per class
@@ -32,7 +40,7 @@ sim_spiral_data = function(
 ## Create Sine Wave Data for Regression ##
 
 #' @export
-sine_data_sim = function(samples, multiple){
+sim_sine_data = function(samples, multiple){
   x  = seq(0, multiple*pi, length.out = samples)
   sine_data = data.frame(x = x/max(x), ##normalized
                          y = sin(x))

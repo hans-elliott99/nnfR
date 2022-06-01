@@ -1,5 +1,35 @@
-# Train Model
-
+#' Train a Neural Network Model
+#
+#' Fit a built neural network model onto data for a specified number of epochs.
+#' An extensive list of function arguments allows for customization of the
+#' training procedure.
+#'
+#' @param model A model object built ontop of the initialize_model() function
+#' @param inputs A matrix containing the inputs into the neural network, often
+#'     referred to as X. This should not include the labels. If not in matrix
+#'     form, consider converting with X = as.matrix(X).
+#' @param y_true The training labels or values (y) corresponding to the inputs (X).
+#'     Can be a list or vector. For classification, the labels must be indexed
+#'     starting at 1.
+#' @param epochs the number of training epochs
+#' @param optimizer A string stating one of: "sgd", "adagrad", "rmsprop", or "adam".
+#'     Consider running optimizer_REMINDME() for more information on optimizers.
+#' @param learning_rate Optimizer setting: the learning rate or alpha
+#' @param lr_decay Optimizer setting: learning rate decay
+#' @param epsilon Optimizer setting: epsilon, a small integer to avoid division by zero
+#' @param ... Optimizer setting: additional optimizer settings can be provided
+#'     as additional arguments. See optimizer_REMINDME() for details on which arguments
+#'     are available for which optimizers.
+#' @param metric_list An optional string or list of strings containing the names
+#'     of metrics to track and calculate in addition to the chosen loss function.
+#'     May include one or more of "mse", "mae", "accuracy", or "regression accuracy".
+#' @param validation_X An optional matrix containing validation data inputs (X) if desired.
+#' @param validation_y The validation labels corresponding to validation inputs
+#' @param batch_size An optional integer to be used if batching is desired. The
+#'     integer corresponds to the number of samples included per batch.
+#' @param epoch_print An integer. Print epoch-wise updates to console every 'epoch_print'
+#' @param batch_print An integer. Print batch-wise updates to console every 'batch_print'
+#'
 #' @export
 train_model = function(model, inputs, y_true, epochs,
                        optimizer = c("adam"),
@@ -7,7 +37,7 @@ train_model = function(model, inputs, y_true, epochs,
                        metric_list=NULL,
                        validation_X=NULL, validation_y=NULL,
                        batch_size=NULL,
-                       epoch_print=100, batch_print=1){
+                       epoch_print=1, batch_print=0){
 
   optim_args = list(...)
   if (!is.null(metric_list)){

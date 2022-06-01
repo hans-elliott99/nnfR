@@ -15,7 +15,7 @@
 #' @return A confusion matrix and dataframe storing classification metrics
 #' @export
 classess = function(truths, predictions){
-  y_true = as.vector(y_true)
+  y_true = as.vector(truths)
   y_hat = as.vector(predictions)
 
   if (length(unique(y_true)) <= 2){

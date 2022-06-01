@@ -7,7 +7,7 @@ train_model = function(model, inputs, y_true, epochs,
                        metric_list=NULL,
                        validation_X=NULL, validation_y=NULL,
                        batch_size=NULL,
-                       print_every=100){
+                       epoch_print=100, batch_print=1){
 
   optim_args = list(...)
   if (!is.null(metric_list)){
@@ -121,7 +121,7 @@ train_model = function(model, inputs, y_true, epochs,
     ##set metrics list to store batch metrics (reset each epoch)
     batch_metrics = data.frame(step = 1:train_steps)
 
-    for(step in 1:train_steps){
+    for(step in 1:train_steps){ ##batching
 
       #Deal with batches:
       ##if no batch_size given, then train using one step and full dataset
@@ -473,6 +473,24 @@ train_model = function(model, inputs, y_true, epochs,
       accumulated_count = accumulated_count + length(loss_layer$sample_losses)
       ##this should be about equal but may differ due to overlapping
 
+
+      ##Batch-wise Status Report
+      if (batch_print > 0){
+        if (step %in% seq(0, train_steps, by = batch_print)){
+          report_head = c("batch_step", "loss", metric_list)
+          report = c(step, mean(loss_layer$sample_losses))
+          for (metric in metric_list){
+            value = batch_metrics[step, paste0(metric)] /
+              batch_metrics[step, "count"]
+            report = c(report, value)
+          }
+
+          report = sapply(report, round, 7)
+          print(paste(report_head, collapse = " | "), quote = FALSE)
+          print(paste(report, collapse = " | "), digits = 5, quote = FALSE)
+        }
+      }
+
     }##end batch steps loop
 
     # Calculate loss for the epoch
@@ -490,8 +508,7 @@ train_model = function(model, inputs, y_true, epochs,
       ##divide by the total number of inputs to get the average
       epoch_metric = sum(batch_metrics[[paste0(metric)]]) /
         sum(batch_metrics[["count"]])
-
-      # mean_metric = mean(batch_metrics[[paste0(metric)]])
+      ##send to metrics df
       metrics[epoch, paste0(metric)] = epoch_metric
 
     }
@@ -547,13 +564,13 @@ train_model = function(model, inputs, y_true, epochs,
     }
 
     # Status Report----
-    if (epoch == 1){
-      report_head = c("epoch", "loss")
-      if (!is.null(validation_X)) report_head = c(report_head, "validation_loss")
-      report_head = c(report_head, metric_list)
-      print(report_head)
-    }
-    if (epoch %in% seq(0,epochs,by=print_every)){
+    #if (epoch == 1){
+    report_head = c("epoch", "loss")
+    if (!is.null(validation_X)) report_head = c(report_head, "validation_loss")
+    report_head = c(report_head, metric_list)
+    #print(report_head)
+    #}
+    if (epoch %in% seq(0,epochs,by=epoch_print)){
       report = c(epoch, loss)
       if (!is.null(validation_X)) report = c(report, validation_loss)
       for (metric in metric_list){
@@ -561,11 +578,11 @@ train_model = function(model, inputs, y_true, epochs,
         report = c(report, value)
       }
 
-
       report = sapply(report, round, 7)
-      print(report)
-      #report_history = rbind(report_history, report)
+      message(paste(report_head, collapse = " | "))
+      message(paste(report, collapse = " | ")) #, digits = 5, quote = FALSE)
     }
+
 
     ## Send the losses to the metrics dataframe for tracking
     metrics[epoch, "loss"] = loss
@@ -576,7 +593,7 @@ train_model = function(model, inputs, y_true, epochs,
 
   }##end epoch loop
 
-  ##Final Output----
+  #Final Output----
   final_metrics = list()
   validation_metrics = list()
   final_metrics[["loss"]] = loss
@@ -592,22 +609,6 @@ train_model = function(model, inputs, y_true, epochs,
     }
   }
 
-  ##Final Predictions
-  raw_predictions = layers[[length(layers)]]$output$output
-  if (loss_fn=="categorical_crossentropy"){
-    predictions = max.col(raw_predictions, ties.method = "random")
-  } else if (loss_fn=="binary_crossentropy"){
-    predictions = (raw_predictions > 0.5) * 1
-  }
-  else {
-    if (ncol(raw_predictions) > 1){
-      ##if using multiple output neurons for a regression or binary problem...
-      ##this is temporary, may want to change
-      predictions = rowMeans(raw_predictions)
-    } else predictions = raw_predictions
-  }
-
-
   ##Save final model parameters
   parameters = list()
   for (b in baselayers){
@@ -615,6 +616,20 @@ train_model = function(model, inputs, y_true, epochs,
     parameters = c(parameters, "layer"=list(params_b))
     names(parameters)[[length(parameters)]] = paste0("layer",b)
   }
+
+
+  ##Final Predictions
+  ##Need to do a forward pass of the data due to batching
+  ##Might just have user use test_model() on training data to generate preds
+  last_fit = list("parameters" = parameters)
+  make_prediction = test_model(model = model,
+                               trained_model = last_fit,
+                               X_test = inputs,
+                               y_test = y_true
+  )
+  raw_predictions = make_prediction$raw_predictions
+  predictions = make_prediction$predictions
+
 
   ##Returns
   list(final_metrics=final_metrics, validation_metrics=validation_metrics,

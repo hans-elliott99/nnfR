@@ -101,7 +101,6 @@ activation_Sigmoid = list(
 
 ## Softmax X Cross Entropy ##
 #' @export
-# combined softmax activation fn & cross-entropy loss for faster backprop
 activation_loss_SoftmaxCrossEntropy = list(
   #FORWARD PASS
   forward = function(input_layer, y_true){
@@ -109,8 +108,10 @@ activation_loss_SoftmaxCrossEntropy = list(
     inputs = input_layer$output
     #output layer's activation function
     softmax_out = activation_Softmax$forward(inputs)
-    #calculate loss
-    sample_losses = Categorical_CrossEntropy$forward(softmax_out, y_true)
+    #calculate loss (unless this were in a prediction phase)
+    if (!is.null(y_true)){
+      sample_losses = Categorical_CrossEntropy$forward(softmax_out, y_true)
+    } else sample_losses = NULL
     #function saves:
     list("output"=softmax_out, "sample_losses"=sample_losses)
   },

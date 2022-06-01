@@ -2,7 +2,7 @@
 
 #' @export
 test_model = function(model, trained_model,
-                      X_test, y_test,
+                      X_test, y_test=NULL,
                       metric_list=NULL){
   inputs = X_test
   y_true = y_test
@@ -89,81 +89,87 @@ test_model = function(model, trained_model,
     }#end loop
   }
 
-  # Calculate Loss Layer
+  # Calculate Loss Layer if y_true is given
   ##Determine the selected loss function
   loss_fn = model[[length(model)]]$class ##last layer should be a loss layer
 
-  if (loss_fn=="mse"){
-    loss_layer = loss_MeanSquaredError$forward(
-      y_pred = layers[[length(layers)]]$output$output,
-      y_true = y_true
-    )
-  } else if (loss_fn=="mae"){
-    loss_layer = loss_MeanAbsoluteError$forward(
-      y_pred = layers[[length(layers)]]$output$output,
-      y_true = y_true
-    )
-  } else if (loss_fn=="binary_crossentropy"){
-    loss_layer = loss_BinaryCrossentropy$forward(
-      y_pred = layers[[length(layers)]]$output$output,
-      y_true = y_true
-    )
-  } else if (loss_fn=="categorical_crossentropy"){
-    loss_layer = layers[[length(layers)]]$output
-  }
-
-  # Calculate Regularized Loss
-  ##If regularization is not used, this code will still run but reg_loss
-  ##will equal zero.
-  layers_reg_loss = c()
-  for (b in baselayers){
-    current_layer = paste0("layer",b)
-    reg_loss_b = regularization_loss(layers[[current_layer]]$dense)
-    layers_reg_loss = c(layers_reg_loss, reg_loss_b)
-  }
-  reg_loss = sum(layers_reg_loss)
-
-  ## Calculate final loss----
-  data_loss = mean(loss_layer$sample_losses)
-  loss = data_loss + reg_loss ##loss = data_loss if regularization not used
-
-  ## Calculate other metrics
-  metrics = list()
-  for (metric in metric_list){
-    if (metric=="mse"){
-      mse = loss_MeanSquaredError$forward(
+  if(!is.null(y_true)){
+    if (loss_fn=="mse"){
+      loss_layer = loss_MeanSquaredError$forward(
         y_pred = layers[[length(layers)]]$output$output,
         y_true = y_true
       )
-      metric_i = mean(mse$sample_losses)
-    } else if (metric=="mae"){
-      mae = loss_MeanAbsoluteError$forward(
+    } else if (loss_fn=="mae"){
+      loss_layer = loss_MeanAbsoluteError$forward(
         y_pred = layers[[length(layers)]]$output$output,
         y_true = y_true
       )
-      metric_i = mean(mae$sample_losses)
-    } else if (metric=="accuracy"){ ##depends on if binary or cateogircal task
-      if (loss_fn=="binary_crossentropy"){
-        pred = (layers[[length(layers)]]$output$output > 0.5) * 1
-        ##returns TRUE (1) if true, and FALSE (0) if false
-      } else if (loss_fn=="categorical_crossentropy"){
-        pred = max.col(layers[[length(layers)]]$output$output,
-                       ties.method = "random")
-      }
-      accuracy = mean(pred==y_true, na.rm = T)
-      metric_i = accuracy
-    } else if (metric=="regression_accuracy"){
-      reg_pred = layers[[length(layers)]]$output$output
-      accuracy_precision = sd(y_true)/max(y_true)
-      reg_accuracy = mean(abs(reg_pred - y_true) < accuracy_precision)
-      metric_i = reg_accuracy
+    } else if (loss_fn=="binary_crossentropy"){
+      loss_layer = loss_BinaryCrossentropy$forward(
+        y_pred = layers[[length(layers)]]$output$output,
+        y_true = y_true
+      )
+    } else if (loss_fn=="categorical_crossentropy"){
+      loss_layer = layers[[length(layers)]]$output
     }
 
-    ##add metric to the metrics list (unless don't want to track them)
-    metrics = c(metrics, "m" = list(metric_i))
-    names(metrics)[[length(metrics)]] = paste0(metric)
+    # Calculate Regularized Loss
+    ##If regularization is not used, this code will still run but reg_loss
+    ##will equal zero.
+    layers_reg_loss = c()
+    for (b in baselayers){
+      current_layer = paste0("layer",b)
+      reg_loss_b = regularization_loss(layers[[current_layer]]$dense)
+      layers_reg_loss = c(layers_reg_loss, reg_loss_b)
+    }
+    reg_loss = sum(layers_reg_loss)
 
-  }#end metrics loop
+    ## Calculate final loss----
+    data_loss = mean(loss_layer$sample_losses)
+    loss = data_loss + reg_loss ##loss = data_loss if regularization not used
+
+    ## Calculate other metrics
+    metrics = list()
+    for (metric in metric_list){
+      if (metric=="mse"){
+        mse = loss_MeanSquaredError$forward(
+          y_pred = layers[[length(layers)]]$output$output,
+          y_true = y_true
+        )
+        metric_i = mean(mse$sample_losses)
+      } else if (metric=="mae"){
+        mae = loss_MeanAbsoluteError$forward(
+          y_pred = layers[[length(layers)]]$output$output,
+          y_true = y_true
+        )
+        metric_i = mean(mae$sample_losses)
+      } else if (metric=="accuracy"){ ##depends on if binary or cateogircal task
+        if (loss_fn=="binary_crossentropy"){
+          pred = (layers[[length(layers)]]$output$output > 0.5) * 1
+          ##returns TRUE (1) if true, and FALSE (0) if false
+        } else if (loss_fn=="categorical_crossentropy"){
+          pred = max.col(layers[[length(layers)]]$output$output,
+                         ties.method = "random")
+        }
+        accuracy = mean(pred==y_true, na.rm = T)
+        metric_i = accuracy
+      } else if (metric=="regression_accuracy"){
+        reg_pred = layers[[length(layers)]]$output$output
+        accuracy_precision = sd(y_true)/max(y_true)
+        reg_accuracy = mean(abs(reg_pred - y_true) < accuracy_precision)
+        metric_i = reg_accuracy
+      }
+
+      ##add metric to the metrics list (unless don't want to track them)
+      metrics = c(metrics, "m" = list(metric_i))
+      names(metrics)[[length(metrics)]] = paste0(metric)
+
+    }#end metrics loop
+  } else { ##if y_true is not given, then no loss/metrics calculated
+    loss = NULL
+    data_loss = NULL
+    metrics = NULL
+  }
 
   ## Final Predictions
   raw_predictions = layers[[length(layers)]]$output$output
@@ -182,8 +188,12 @@ test_model = function(model, trained_model,
 
 
   ##Output:
-  list(predictions=predictions, raw_predictions = raw_predictions,
-       loss=loss, data_loss=data_loss,
-       metrics=metrics)
+  if(!is.null(y_true)){
+    list(predictions=predictions, raw_predictions = raw_predictions,
+         loss=loss, data_loss=data_loss,
+         metrics=metrics)
+  } else {
+    list(predictions=predictions, raw_predictions = raw_predictions)
+  }
 
 }

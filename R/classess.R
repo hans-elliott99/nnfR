@@ -42,17 +42,19 @@ classess = function(truths, predictions){
     fn = conf_mat[2,1]
     total = tp + fp + tn + fn
 
-    metrics = data.frame(
+    m = data.frame(
       accuracy = (tp + tn) / total, #share of correctly predicted labels
       sensitivity = tp / (tp + fn), #share of true pos we predict correct
-      recall = sensitivity,
+      recall = tp / (tp + fn), #recall = sensitivity
       specificity = tn / (tn + fp), #share of true no's we predicted correct
-      precision = tp / (tp + fp), #share of predicted pos that are correct
-      #F1 Score: the harmonic mean of precision and recall
-      f1_score = 2 * (precision * recall) / (precision + recall)
+      precision = tp / (tp + fp) #share of predicted pos that are correct
+    )
+    m = cbind(m,
+              #F1 Score: the harmonic mean of precision and recall
+              f1_score = 2 * (m$precision * m$recall) / (m$precision + m$recall)
     )
     #return
-    list(conf_mat = conf_mat, metrics = metrics)
+    list(conf_mat = conf_mat, metrics = m)
 
     #Multiclass Confusion Matrix
   } else if (length(unique(y_true)) > 2){

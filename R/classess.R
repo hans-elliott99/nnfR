@@ -18,13 +18,24 @@ classess = function(truths, predictions){
   y_true = as.vector(truths)
   y_hat = as.vector(predictions)
 
+  #Binary Confusion Matrix
   if (length(unique(y_true)) <= 2){
-    ##Binary Confusion Matrix
 
-    ##Note: positive class will be whichever class is assigned to label 1
+    #Note: positive class will be whichever class is assigned to label 1
     #Confusion Matrix
-    conf_mat = table(y_hat, y_true, dnn = c("pred", "true"))
+    ##Need to initialize a matrix of the correct length with zeros due to
+    ##possibility of predictions not containing every possible class
+    conf_mat = matrix(0,
+                      nrow = length(unique(y_true)), ncol = length(unique(y_true)))
+    tab = table(y_hat, y_true)
 
+    for (pred in unique(y_hat)){
+      for (class in unique(y_true))
+        conf_mat[pred, class] = tab[pred, class]
+    }
+    #Format Confusion Matrix
+    dimnames(conf_mat) = list("pred"=c(unique(y_true)),
+                              "true"=c(unique(y_true)))
     tp = conf_mat[1,1]
     fp = conf_mat[1,2]
     tn = conf_mat[2,2]
@@ -37,24 +48,32 @@ classess = function(truths, predictions){
       recall = sensitivity,
       specificity = tn / (tn + fp), #share of true no's we predicted correct
       precision = tp / (tp + fp), #share of predicted pos that are correct
-
       #F1 Score: the harmonic mean of precision and recall
       f1_score = 2 * (precision * recall) / (precision + recall)
     )
     #return
     list(conf_mat = conf_mat, metrics = metrics)
 
-
+    #Multiclass Confusion Matrix
   } else if (length(unique(y_true)) > 2){
-    ##Multiclass Confusion Matrix
+    conf_mat = matrix(0,
+                      nrow = length(unique(y_true)), ncol = length(unique(y_true)))
+    tab = table(y_hat, y_true)
 
-    #Confusion Matrix
-    conf_mat = table(y_hat, y_true, dnn = c("pred", "true"))
+    for (pred in unique(y_hat)){
+      for (class in unique(y_true))
+        conf_mat[pred, class] = tab[pred, class]
+    }
+    #Format Confusion Matrix
+    dimnames(conf_mat) = list("pred"=c(sort(unique(y_true))),
+                              "true"=c(sort(unique(y_true)))
+    )
 
     #Find TP, TN, FP and FN for each individual class
     #Add metrics to a dataframe
     metrics = data.frame(class = 1:length(unique(y_true)))
-    for (class in unique(y_true)){
+    #if a class is not in y_hat, it will produce NA. good for user to see
+    for (class in unique(y_hat)){##iterate through classes actually predicted
       tp = conf_mat[class, class]
       fp = sum(conf_mat[class, ]) - tp
       tn = sum(conf_mat[-class, -class])

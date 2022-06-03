@@ -14,34 +14,44 @@
 #' @param predictions A vector of predicted labels (with same indexing from truths)
 #' @return A confusion matrix and dataframe storing classification metrics
 #' @export
+#Classess: Assess Classification Performance ----
 classess = function(truths, predictions){
   y_true = as.vector(truths)
   y_hat = as.vector(predictions)
 
   #Binary Confusion Matrix
   if (length(unique(y_true)) <= 2){
-
     #Note: positive class will be whichever class is assigned to label 1
     #Confusion Matrix
     ##Need to initialize a matrix of the correct length with zeros due to
     ##possibility of predictions not containing every possible class
-    conf_mat = matrix(0,
-                      nrow = length(unique(y_true)), ncol = length(unique(y_true)))
-    tab = table(y_hat, y_true)
+    y_true = y_true + 1 ##cant index using 0 and 1
+    y_hat = y_hat + 1
+    # conf_mat = matrix(0, ##create matrix of 0s of appropriate length
+    #        nrow = length(unique(y_true)),
+    #        ncol = length(unique(y_true)))
+    conf_mat = table(y_hat, y_true) #tabulate the predictions and truths
+    diff = setdiff(y_true, y_hat) ##figure out which if any class not predicted
+    if (diff == 1) conf_mat = rbind(c(0,0), conf_mat)
+    if (diff == 2) conf_mat = rbind(conf_mat, c(0,0))
+    #fill out table if missing class, but order depends on which class
 
-    for (pred in unique(y_hat)){
-      for (class in unique(y_true))
-        conf_mat[pred, class] = tab[pred, class]
-    }
+    # for (pred in unique(y_hat)){ ##index the table and add to the matrix
+    #   for (class in unique(y_true)){
+    #   conf_mat[pred, class] = tab[pred, class]
+    #   }
+    # }
     #Format Confusion Matrix
-    dimnames(conf_mat) = list("pred"=c(unique(y_true)),
-                              "true"=c(unique(y_true)))
+    dimnames(conf_mat) = list("pred"=c(sort(unique(y_true)-1)),
+                              "true"=c(sort(unique(y_true)-1))
+    )
     tp = conf_mat[1,1]
     fp = conf_mat[1,2]
     tn = conf_mat[2,2]
     fn = conf_mat[2,1]
     total = tp + fp + tn + fn
 
+    #Calculate metrics
     m = data.frame(
       accuracy = (tp + tn) / total, #share of correctly predicted labels
       sensitivity = tp / (tp + fn), #share of true pos we predict correct
@@ -58,14 +68,22 @@ classess = function(truths, predictions){
 
     #Multiclass Confusion Matrix
   } else if (length(unique(y_true)) > 2){
-    conf_mat = matrix(0,
-                      nrow = length(unique(y_true)), ncol = length(unique(y_true)))
-    tab = table(y_hat, y_true)
+    # conf_mat = matrix(0,
+    #        nrow = length(unique(y_true)), ncol = length(unique(y_true)))
+    conf_mat = table(y_hat, y_true)
 
-    for (pred in unique(y_hat)){
-      for (class in unique(y_true))
-        conf_mat[pred, class] = tab[pred, class]
+    diff = setdiff(y_true, y_hat)
+    for (class in diff){
+      newrow = array(0, dim = length(unique(y_true)))
+      conf_mat = rbind(conf_mat,newrow)
+      conf_mat = conf_mat[order(c(1:(nrow(conf_mat)-1),class-0.5)),]
     }
+    #Idea source: https://stackoverflow.com/questions/11561856/add-new-row-to-dataframe-at-specific-row-index-not-appended.
+
+    # for (pred in unique(y_hat)){
+    #   for (class in unique(y_true))
+    #   conf_mat[pred, class] = tab[pred, class]
+    # }
     #Format Confusion Matrix
     dimnames(conf_mat) = list("pred"=c(sort(unique(y_true))),
                               "true"=c(sort(unique(y_true)))
@@ -96,6 +114,8 @@ classess = function(truths, predictions){
       f1_score = 2 * (precision * recall) / (precision + recall)
       metrics[class, "f1_score"] = f1_score
     }
+    overall_accuracy = sum(y_hat == y_true) / length(y_true)
+    metrics = cbind(metrics, overall_accuracy)
     #return
     list(conf_mat = conf_mat, metrics = metrics)
   }

@@ -14,7 +14,6 @@
 #' @param predictions A vector of predicted labels (with same indexing from truths)
 #' @return A confusion matrix and dataframe storing classification metrics
 #' @export
-#Classess: Assess Classification Performance ----
 classess = function(truths, predictions){
   y_true = as.vector(truths)
   y_hat = as.vector(predictions)
@@ -32,15 +31,13 @@ classess = function(truths, predictions){
     #        ncol = length(unique(y_true)))
     conf_mat = table(y_hat, y_true) #tabulate the predictions and truths
     diff = setdiff(y_true, y_hat) ##figure out which if any class not predicted
-    if (diff == 1) conf_mat = rbind(c(0,0), conf_mat)
-    if (diff == 2) conf_mat = rbind(conf_mat, c(0,0))
     #fill out table if missing class, but order depends on which class
+    for (class in diff){
+      newrow = array(0, dim = length(unique(y_true)))
+      conf_mat = rbind(conf_mat,newrow)
+      conf_mat = conf_mat[order(c(1:(nrow(conf_mat)-1),class-0.5)),]
+    }
 
-    # for (pred in unique(y_hat)){ ##index the table and add to the matrix
-    #   for (class in unique(y_true)){
-    #   conf_mat[pred, class] = tab[pred, class]
-    #   }
-    # }
     #Format Confusion Matrix
     dimnames(conf_mat) = list("pred"=c(sort(unique(y_true)-1)),
                               "true"=c(sort(unique(y_true)-1))
@@ -80,10 +77,6 @@ classess = function(truths, predictions){
     }
     #Idea source: https://stackoverflow.com/questions/11561856/add-new-row-to-dataframe-at-specific-row-index-not-appended.
 
-    # for (pred in unique(y_hat)){
-    #   for (class in unique(y_true))
-    #   conf_mat[pred, class] = tab[pred, class]
-    # }
     #Format Confusion Matrix
     dimnames(conf_mat) = list("pred"=c(sort(unique(y_true))),
                               "true"=c(sort(unique(y_true)))

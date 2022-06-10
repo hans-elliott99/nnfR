@@ -1,5 +1,20 @@
-# Test Model
-
+#' Test Model
+#'
+#' Make training or testing predictions with a fitted model. This function can be
+#' used to get predictions from a model after it is trained, or to make final
+#' predictions on test data.
+#'
+#' @param model A model object built ontop of the `nnfR::initialize_model()` function
+#' @param trained_model The trained/fitted model object created from the
+#'      `nnfR::train_model()` function.
+#' @param X_test the X inputs (the features, without the outcome variable/y/labels)
+#' @param y_test Optional. The y outputs corresponding to the X inputs. These can be
+#'     provided if you want to generate final loss and metrics from training data. If
+#'     excluded, this function will simply make predictions from the X inputs.
+#' @param metric_list An optional string or list of strings containing the names
+#'     of metrics to track and calculate in addition to the chosen loss function.
+#'     May include one or more of "mse", "mae", "accuracy", or "regression accuracy".
+#'
 #' @export
 test_model = function(model, trained_model,
                       X_test, y_test=NULL,

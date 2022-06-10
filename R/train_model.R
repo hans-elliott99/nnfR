@@ -6,7 +6,7 @@
 #' An extensive list of function arguments allows for customization of the
 #' training procedure.
 #'
-#' @param model A model object built ontop of the initialize_model() function
+#' @param model A model object built ontop of the `nnfR::initialize_model()` function
 #' @param inputs A matrix containing the inputs into the neural network, often
 #'     referred to as X. This should not include the labels. If not in matrix
 #'     form, consider converting with X = as.matrix(X).
@@ -19,7 +19,7 @@
 #' @param learning_rate Optimizer setting: the learning rate or alpha
 #' @param lr_decay Optimizer setting: learning rate decay
 #' @param epsilon Optimizer setting: epsilon, a small integer to avoid division by zero
-#' @param ... Optimizer setting: additional optimizer settings can be provided
+#' @param ... Optimizer settings: additional optimizer settings can be provided
 #'     as additional arguments. See optimizer_REMINDME() for details on which arguments
 #'     are available for which optimizers.
 #' @param metric_list An optional string or list of strings containing the names
@@ -39,7 +39,7 @@ train_model = function(model, inputs, y_true, epochs,
                        metric_list=NULL,
                        validation_X=NULL, validation_y=NULL,
                        batch_size=NULL,
-                       epoch_print=1, batch_print=0){
+                       epoch_print=100, batch_print=0){
 
   optim_args = list(...)
   if (!is.null(metric_list)){
@@ -432,7 +432,7 @@ train_model = function(model, inputs, y_true, epochs,
             layer = layers[[current_layer]]$activ)
         } #else if "softmax" once pure softmax is fixed
 
-        if (model[[baselayers[b]]]$dropout_rate == 0){
+        if (model[[b]]$dropout_rate == 0){
           #dropout_rt = FALSE
           d_layer_todense=activ_backprop
         } else {
@@ -573,7 +573,7 @@ train_model = function(model, inputs, y_true, epochs,
           }
         }
 
-        ###Utilize the test_model() fn to test on validation data, if provided
+        ###Utilize the test_model() fn to test on validation data
         current_fit = list("parameters" = layer_parameters)
 
         if (is.null(validation_y)){
@@ -616,31 +616,22 @@ train_model = function(model, inputs, y_true, epochs,
     }
 
 
-    ## Send the losses to the metrics dataframe for tracking
+    ## Send losses to the metrics dataframe for tracking
     metrics[epoch, "loss"] = loss
     metrics[epoch, "data_loss"] = data_loss
     if (!is.null(validation_X)){
       metrics[epoch, "validation_loss"] = validation_loss
     }
+    ## Also send any validation metrics to the metrics dataframe
+    for (metric in metric_list){
+      value = validation$metrics[[paste0(metric)]]
+      metrics[epoch, paste0("val_",metric)] = value
+    }
 
   }##end epoch loop
 
-  #Final Output----
-  final_metrics = list()
-  validation_metrics = list()
-  final_metrics[["loss"]] = loss
-  final_metrics[["data_loss"]] = data_loss
-  if (!is.null(validation_X)){
-    final_metrics[["validation_loss"]] = validation_loss
-  }
-  for (metric in metric_list){
-    final_metrics[[paste0(metric)]] = metrics[epochs, paste0(metric)]
-    if (!is.null(validation_X)){
-      validation_metrics[[paste0(metric)]] =
-        validation$metrics[[paste0(metric)]]
-    }
-  }
 
+  #Final Output----
   ##Save final model parameters
   parameters = list()
   for (b in baselayers){
@@ -653,19 +644,32 @@ train_model = function(model, inputs, y_true, epochs,
   ##Final Predictions
   ##Need to do a forward pass of the data due to batching
   ##Might just have user use test_model() on training data to generate preds
-  last_fit = list("parameters" = parameters)
-  make_prediction = test_model(model = model,
-                               trained_model = last_fit,
-                               X_test = inputs,
-                               y_test = y_true
-  )
-  raw_predictions = make_prediction$raw_predictions
-  predictions = make_prediction$predictions
+  # last_fit = list("parameters" = parameters)
+  # make_prediction = test_model(model = model,
+  #                              trained_model = last_fit,
+  #                              X_test = inputs,
+  #                              y_test = y_true
+  #                              )
+  # raw_predictions = make_prediction$raw_predictions
+  # predictions = make_prediction$predictions
 
+  ##Final Metrics
+  final_metrics = list()
+  final_metrics[["loss"]] = loss
+  final_metrics[["data_loss"]] = data_loss
+  if (!is.null(validation_X)){
+    final_metrics[["validation_loss"]] = validation_loss
+  }
+  for (metric in metric_list){ ##from the final epoch
+    final_metrics[[paste0(metric)]] = metrics[epochs, paste0(metric)]
+    if (!is.null(validation_X)){
+      final_metrics[[paste0("val_",metric)]] =
+        validation$metrics[[paste0(metric)]]
+    }
+  }
 
   ##Returns
-  list(final_metrics=final_metrics, validation_metrics=validation_metrics,
+  list(final_metrics=final_metrics,
        metrics=metrics,
-       predictions=predictions, raw_predictions=raw_predictions,
        parameters=parameters)
 }

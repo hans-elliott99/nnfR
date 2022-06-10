@@ -21,12 +21,12 @@ train_model(
   validation_X = NULL,
   validation_y = NULL,
   batch_size = NULL,
-  epoch_print = 1,
+  epoch_print = 100,
   batch_print = 0
 )
 }
 \arguments{
-\item{model}{A model object built ontop of the initialize_model() function}
+\item{model}{A model object built ontop of the \code{nnfR::initialize_model()} function}
 
 \item{inputs}{A matrix containing the inputs into the neural network, often
 referred to as X. This should not include the labels. If not in matrix
@@ -47,7 +47,7 @@ Consider running optimizer_REMINDME() for more information on optimizers.}
 
 \item{epsilon}{Optimizer setting: epsilon, a small integer to avoid division by zero}
 
-\item{...}{Optimizer setting: additional optimizer settings can be provided
+\item{...}{Optimizer settings: additional optimizer settings can be provided
 as additional arguments. See optimizer_REMINDME() for details on which arguments
 are available for which optimizers.}
 

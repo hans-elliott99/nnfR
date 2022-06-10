@@ -10,9 +10,13 @@
 #' Current metrics are accuracy, sensitivity/recall, specificity, precision,
 #' and F1 score.
 #'
-#' @param truths A vector of true labels (indexed as numbers from 1 to k)
-#' @param predictions A vector of predicted labels (with same indexing from truths)
-#' @return A confusion matrix and dataframe storing classification metrics
+#' @param truths A vector of true labels. For binary/2 class tasks, these
+#'     2 classes may be indexed as either (0, 1) or (1, 2). For multi-class tasks,
+#'     the classes should be indexed starting at 1 (from 1 to K).
+#' @param predictions A vector of predicted labels (with the same indexing as the truths)
+#' @return A confusion matrix, dataframe storing classification metrics, and the
+#'     overall accuracy of the predictions.
+#'
 #' @export
 classess = function(truths, predictions){
   y_true = as.vector(truths)
@@ -24,11 +28,10 @@ classess = function(truths, predictions){
     #Confusion Matrix
     ##Need to initialize a matrix of the correct length with zeros due to
     ##possibility of predictions not containing every possible class
-    y_true = y_true + 1 ##cant index using 0 and 1
-    y_hat = y_hat + 1
-    # conf_mat = matrix(0, ##create matrix of 0s of appropriate length
-    #        nrow = length(unique(y_true)),
-    #        ncol = length(unique(y_true)))
+    if (min(y_true) == 0){ ##if classes are encoded as 0 and 1
+      y_true = y_true + 1 ##cant index using 0 and 1
+      y_hat = y_hat + 1
+    }
     conf_mat = table(y_hat, y_true) #tabulate the predictions and truths
     diff = setdiff(y_true, y_hat) ##figure out which if any class not predicted
     #fill out table if missing class, but order depends on which class
@@ -60,8 +63,10 @@ classess = function(truths, predictions){
               #F1 Score: the harmonic mean of precision and recall
               f1_score = 2 * (m$precision * m$recall) / (m$precision + m$recall)
     )
+    overall_accuracy = sum(y_hat == y_true) / length(y_true)
     #return
-    list(conf_mat = conf_mat, metrics = m)
+    list(conf_mat = conf_mat, metrics = m,
+         overall_accuracy = overall_accuracy)
 
     #Multiclass Confusion Matrix
   } else if (length(unique(y_true)) > 2){
@@ -108,8 +113,8 @@ classess = function(truths, predictions){
       metrics[class, "f1_score"] = f1_score
     }
     overall_accuracy = sum(y_hat == y_true) / length(y_true)
-    metrics = cbind(metrics, overall_accuracy)
     #return
-    list(conf_mat = conf_mat, metrics = metrics)
+    list(conf_mat = conf_mat, metrics = metrics,
+         overall_accuracy=overall_accuracy)
   }
 }

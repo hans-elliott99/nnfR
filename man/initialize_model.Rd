@@ -14,5 +14,8 @@ An empty list object to which layers can be added.
 }
 \description{
 This function initializes an empty model object to which layers can be added.
-A model must be initialized before any layers are added.
+A model must be initialized before any layers are added. Layers must then be
+added sequentially like so: every dense layer (\code{nnfR::add_dense()}) is
+followed by an activation layer (\code{nnfR::add_activation()}),
+and the last layer in the model is a loss function (\code{nnfR::add_loss()}).
 }

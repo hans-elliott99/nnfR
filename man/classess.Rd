@@ -7,12 +7,15 @@
 classess(truths, predictions)
 }
 \arguments{
-\item{truths}{A vector of true labels (indexed as numbers from 1 to k)}
+\item{truths}{A vector of true labels. For binary/2 class tasks, these
+2 classes may be indexed as either (0, 1) or (1, 2). For multi-class tasks,
+the classes should be indexed starting at 1 (from 1 to K).}
 
-\item{predictions}{A vector of predicted labels (with same indexing from truths)}
+\item{predictions}{A vector of predicted labels (with the same indexing as the truths)}
 }
 \value{
-A confusion matrix and dataframe storing classification metrics
+A confusion matrix, dataframe storing classification metrics, and the
+overall accuracy of the predictions.
 }
 \description{
 This function takes as input the groud truth labels and predicted labels from

@@ -65,26 +65,22 @@ activation_Softmax = list(
     return(t(probabilities))
     #(transpose probabilities)
   },
-
   backward = function(softmax_output, dvalues){
-    #*INCOMPLETE SECTION - don't use*
-
-    # Create uninitialized array
+    # Create zero array the shape of the dvalues
     dinputs = matrix(0, nrow=nrow(dvalues), ncol=ncol(dvalues))
+    # Enumerate sample-wise (rows) through outputs and gradients
+    for (i in 1:nrow(softmax_output)){
+      ##ensure each row is now a column vector with matrix()
+      single_output = matrix(softmax_output[i,])
+      single_dvalues = matrix(dvalues[i,])
 
-    # Enumerate outputs and gradients
-    for i in seq_along(softmax_output){
-      for single_output in softmax_output{
-        for single_dvalues in dvalues{
-          # Flatten output array
-          single_output = c(softmax_output)
-          # Calculate jacobian matrix of output
-          jacobian_matrix = diag(single_output) - (single_output%*%t(single_output))
-          # Calculate sample-wise gradient, add to array of gradients
-          dinputs[i] = jacobian_matrix %*% single_dvalues
-        }
-      }
-    }#end loop
+      # Calculate jacobian matrix of output
+      ##Note: convert single_output to simple row vector with c() for diag to work
+      jacobian_matrix = diag(c(single_output)) - (single_output %*% t(single_output))
+      # Calculate sample-wise gradient & add to array of gradients (as a row)
+      dinputs[i,] = c(jacobian_matrix %*% single_dvalues)
+    }
+    return(dinputs)
   }
 )
 

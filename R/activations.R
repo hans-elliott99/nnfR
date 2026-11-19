@@ -23,12 +23,7 @@ activation_ReLU = list(
   forward = function(input_layer){
 
     inputs = input_layer$output
-    output = matrix(sapply(X = inputs,
-                           function(X){max(c(0, X))}
-    ),
-    nrow = nrow(inputs), ncol = ncol(inputs))
-    #ReLU function coerced into a matrix so the shape
-    #is maintained (it will be equivalent to that of the input shape)
+    output = pmax(inputs, 0)
 
     #Function saves:
     list("output" = output, "inputs" = inputs)
@@ -49,21 +44,15 @@ activation_ReLU = list(
 #' @export
 activation_Softmax = list(
   forward = function(inputs){
-    #scale inputs
-    max_value = apply(X = inputs, MARGIN = 2,  FUN = max)
-    scaled_inputs = sapply(X = 1:ncol(inputs),
-                           FUN = function(X){
-                             inputs[,X] - abs(max_value[X])})
+    inputs = as.matrix(inputs)
+    #scale inputs (by each row's max)
+    scaled_inputs = inputs - apply(X = inputs, MARGIN = 1, FUN = max)
 
     # exponetiate
-    exp_values = as.matrix(exp(scaled_inputs))
+    exp_values = exp(scaled_inputs)
     # normalize
-    norm_base = matrix(rowSums(exp_values),
-                       nrow = nrow(inputs), ncol = 1)
-    probabilities = sapply(X = 1:nrow(inputs),
-                           FUN = function(X){exp_values[X,]/norm_base[X,]})
-    return(t(probabilities))
-    #(transpose probabilities)
+    probabilities = exp_values / rowSums(exp_values)
+    return(probabilities)
   },
   backward = function(softmax_output, dvalues){
     # Create zero array the shape of the dvalues

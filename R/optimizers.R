@@ -173,31 +173,30 @@ optimizer_Adam = list(
     currnt_learn_rate = learning_rate * (1 / (1 + lr_decay*iteration))
 
     #momentums
-    #update momentums with current gradients and bias correct
+    #update momentums with current gradients
     weight_momentums =
-      (beta_1*layer_forward$weight_momentums + (1-beta_1)*weight_gradients ) /
-      (1 - (beta_1^iteration )) ##bias correction
-
+      beta_1*layer_forward$weight_momentums + (1-beta_1)*weight_gradients
     bias_momentums =
-      (beta_1*layer_forward$bias_momentums + (1-beta_1)*bias_gradients) /
-      (1 - (beta_1^iteration))
-
+      beta_1*layer_forward$bias_momentums + (1-beta_1)*bias_gradients
 
     #cache
-    #update cache with squared gradients and bias correct
+    #update cache with squared gradients
     weight_cache =
-      (beta_2*layer_forward$weight_cache + (1-beta_2)*weight_gradients^2) /
-      (1 - (beta_2^iteration)) ##bias correction
-
+      beta_2*layer_forward$weight_cache + (1-beta_2)*weight_gradients^2
     bias_cache =
-      (beta_2*layer_forward$bias_cache + (1-beta_2)*bias_gradients^2) /
-      (1 - (beta_2^iteration))
+      beta_2*layer_forward$bias_cache + (1-beta_2)*bias_gradients^2
+
+    #bias correction
+    weight_momentums_corrected = weight_momentums / (1 - (beta_1^iteration))
+    bias_momentums_corrected = bias_momentums / (1 - (beta_1^iteration))
+    weight_cache_corrected = weight_cache / (1 - (beta_2^iteration))
+    bias_cache_corrected = bias_cache / (1 - (beta_2^iteration))
 
     #calculate param updates (with momentums, and normalize with cache)
-    weight_update = -currnt_learn_rate*weight_momentums /
-      (sqrt(weight_cache) + epsilon)
-    bias_update = -currnt_learn_rate*bias_momentums /
-      (sqrt(bias_cache) + epsilon)
+    weight_update = -currnt_learn_rate*weight_momentums_corrected /
+      (sqrt(weight_cache_corrected) + epsilon)
+    bias_update = -currnt_learn_rate*bias_momentums_corrected /
+      (sqrt(bias_cache_corrected) + epsilon)
 
     #apply updates
     weights = current_weights + weight_update

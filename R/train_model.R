@@ -42,10 +42,8 @@ train_model = function(model, inputs, y_true, epochs,
                        epoch_print=100, batch_print=0){
 
   optim_args = list(...)
-  if (!is.null(metric_list)){
-    ##set metrics list to store metrics
-    metrics = data.frame(epoch = 1:epochs)
-  }
+  ##set metrics list to store metrics
+  metrics = data.frame(epoch = 1:epochs)
 
   # Setup ----
   ##How many unique "base layers" (dense layers)
@@ -144,6 +142,7 @@ train_model = function(model, inputs, y_true, epochs,
   }
 
   # Training Loop ----
+  iteration = 0
   for (epoch in 1:epochs){
 
     step_loss = 0      ##we will accumulate these over the steps
@@ -154,6 +153,7 @@ train_model = function(model, inputs, y_true, epochs,
     batch_metrics = data.frame(step = 1:train_steps)
 
     for(step in 1:train_steps){ ##batching
+      iteration = iteration + 1
 
       #Deal with batches:
       ##if no batch_size given, then train using one step and full dataset
@@ -202,7 +202,7 @@ train_model = function(model, inputs, y_true, epochs,
       } else if (activ_fn1=="softmax_crossentropy"){
         activ1 = activation_loss_SoftmaxCrossEntropy$forward(
           input_layer = dropout1,
-          y_true = y_true)
+          y_true = batch_y)
       } else message("Please enter one of the following strings in $add_activation to select an activation function: 'linear', 'relu', 'sigmoid', 'softmax_crossentropy'")
 
       output1 = activ1
@@ -427,7 +427,7 @@ train_model = function(model, inputs, y_true, epochs,
             d_layer = layers_back[[input_layer]]$dense_backprop,
             layer = layers[[current_layer]]$activ)
         } else if (activ_fn=="sigmoid"){
-          activation_Sigmoid$backward(
+          activ_backprop = activation_Sigmoid$backward(
             d_layer = layers_back[[input_layer]]$dense_backprop,
             layer = layers[[current_layer]]$activ)
         } #else if "softmax" once pure softmax is fixed
@@ -460,7 +460,7 @@ train_model = function(model, inputs, y_true, epochs,
             layer_forward = layers[[current_layer]]$dense,
             layer_backward = layers_back[[current_layer]]$dense_backprop,
             learning_rate = learning_rate,
-            lr_decay = lr_decay, iteration = epoch,
+            lr_decay = lr_decay, iteration = iteration,
             momentum_rate = optim_args$momentum_rate
           )
         } else if (optimizer=="adagrad"){
@@ -468,7 +468,7 @@ train_model = function(model, inputs, y_true, epochs,
             layer_forward = layers[[current_layer]]$dense,
             layer_backward = layers_back[[current_layer]]$dense_backprop,
             learning_rate = learning_rate,
-            lr_decay = lr_decay, iteration = epoch,
+            lr_decay = lr_decay, iteration = iteration,
             epsilon = epsilon
           )
         } else if (optimizer=="rmsprop"){
@@ -476,7 +476,7 @@ train_model = function(model, inputs, y_true, epochs,
             layer_forward = layers[[current_layer]]$dense,
             layer_backward = layers_back[[current_layer]]$dense_backprop,
             learning_rate = learning_rate,
-            lr_decay = lr_decay, iteration = epoch,
+            lr_decay = lr_decay, iteration = iteration,
             epsilon = epsilon,
             rho = optim_args$rho
           )
@@ -485,7 +485,7 @@ train_model = function(model, inputs, y_true, epochs,
             layer_forward = layers[[current_layer]]$dense,
             layer_backward = layers_back[[current_layer]]$dense_backprop,
             learning_rate = learning_rate,
-            lr_decay = lr_decay, iteration = epoch,
+            lr_decay = lr_decay, iteration = iteration,
             epsilon = epsilon,
             beta_1 = optim_args$beta_1,
             beta_2 = optim_args$beta_2
@@ -552,7 +552,7 @@ train_model = function(model, inputs, y_true, epochs,
     if(!is.null(validation_X)){
       batch_valid_loss = c()
 
-      for (step in validation_steps){
+      for (step in 1:validation_steps){
         if (validation_steps == 1){
           valid_batch_X = validation_X
           valid_batch_y = validation_y
@@ -623,9 +623,11 @@ train_model = function(model, inputs, y_true, epochs,
       metrics[epoch, "validation_loss"] = validation_loss
     }
     ## Also send any validation metrics to the metrics dataframe
-    for (metric in metric_list){
-      value = validation$metrics[[paste0(metric)]]
-      metrics[epoch, paste0("val_",metric)] = value
+    if (!is.null(validation_X)){
+      for (metric in metric_list){
+        value = validation$metrics[[paste0(metric)]]
+        metrics[epoch, paste0("val_",metric)] = value
+      }
     }
 
   }##end epoch loop

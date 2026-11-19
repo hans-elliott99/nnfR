@@ -74,7 +74,7 @@ classess = function(truths, predictions){
     #        nrow = length(unique(y_true)), ncol = length(unique(y_true)))
     conf_mat = table(y_hat, y_true)
 
-    diff = setdiff(y_true, y_hat)
+    diff = sort(setdiff(y_true, y_hat))
     for (class in diff){
       newrow = array(0, dim = length(unique(y_true)))
       conf_mat = rbind(conf_mat,newrow)
@@ -95,7 +95,7 @@ classess = function(truths, predictions){
       tp = conf_mat[class, class]
       fp = sum(conf_mat[class, ]) - tp
       tn = sum(conf_mat[-class, -class])
-      fn = sum(conf_mat[class, ]) - tp
+      fn = sum(conf_mat[, class]) - tp
       total = tp + fp + tn + fn
 
       accuracy = (tp + tn) / total
